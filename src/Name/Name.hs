@@ -56,6 +56,7 @@ import Name.Internals
 import StringTable.Atom
 import Ty.Level
 import Name.Prim
+import GHC.Stack (errorWithStackTrace)
 
 isTypeNamespace TypeConstructor = True
 isTypeNamespace ClassName = True
@@ -160,7 +161,12 @@ parseName t name = toName t (intercalate "." ms, intercalate "." (ns ++ [last sn
     validMod _ = False
 
 nameType :: Name -> NameType
-nameType (Name a) = toEnum $ fromIntegral ( a `unsafeByteIndex` 0) - ord '1'
+nameType (Name a) = 
+    let (minB, maxB) = (minBound, maxBound) :: (NameType, NameType)
+        index = fromIntegral ( a `unsafeByteIndex` 0) - ord '1'
+    in case index < minB || index > maxB of
+        False -> toEnum index
+        True -> errorWithStackTrace "nameType: index is out of range."
 
 nameName :: Name -> Name
 nameName n = n
